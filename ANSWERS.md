@@ -1,198 +1,198 @@
-# Engineering Test Answers
+# Ответы на тестовое задание
 
-## Authentication
+## Аутентификация
 
-In this repository, JWT is used for authentication, which is a common and well-established approach, especially in stateless architectures. However, one trade-off is the overhead of sending a relatively large token with every HTTP request.
+В данном репозитории для аутентификации используется JWT — это распространённый и проверенный подход, особенно в stateless-архитектурах. Однако у него есть и недостатки, например, необходимость передавать достаточно большой токен с каждым HTTP-запросом.
 
-In my experience, I’ve worked with alternative approaches depending on system requirements.
+В своей практике я использовала и альтернативные подходы в зависимости от требований системы.
 
-For example, in one project, we used session-based authentication with Redis-backed storage. The client only sent a small session ID via cookies, while all user context was stored server-side. This reduced request payload size and allowed immediate session revocation, which is harder to achieve with JWT.
+Например, в одном из проектов мы использовали сессионную аутентификацию с хранением сессий в Redis. Клиент передавал только небольшой session ID (через cookie), а все данные пользователя хранились на сервере. Это уменьшало размер запросов и позволяло мгновенно отзывать сессии, что сложнее реализовать с JWT.
 
-I’ve also used API key + HMAC signature mechanisms for internal service-to-service communication. This ensured request integrity without repeatedly transmitting large tokens.
+Также я использовала API-ключи с HMAC-подписью для взаимодействия между сервисами. Такой подход обеспечивает целостность запроса и не требует передачи больших токенов.
 
-### Would I choose JWT?
+### Выбрала бы я JWT?
 
-Yes, I would choose JWT in:
-- distributed systems  
-- microservice architectures  
-- serverless environments  
+Да, я бы выбрала JWT в следующих случаях:
+- распределённые системы  
+- микросервисная архитектура  
+- serverless-окружения  
 
-Because:
-- it enables stateless authentication  
-- removes dependency on centralized session storage  
-- scales well horizontally  
-- allows embedding user roles/claims directly in the token  
+Потому что:
+- не требует хранения сессий на сервере  
+- хорошо масштабируется горизонтально  
+- позволяет хранить роли и claims прямо в токене  
 
-### When I would avoid JWT
+### Когда я бы не использовала JWT
 
-I would avoid JWT in systems where:
-- immediate revocation is critical (e.g., financial systems, admin panels)  
-- request size matters (high-throughput APIs)  
-- strict session control is required  
+Я бы не стала использовать JWT в системах, где:
+- важна мгновенная отзывчивость (например, финансовые системы, админ-панели)  
+- критичен размер запросов (высоконагруженные API)  
+- требуется строгий контроль сессий  
 
-In such cases, I would prefer:
-- session-based authentication  
-- or short-lived tokens with refresh and revocation strategies  
+В таких случаях я бы предпочла:
+- сессионную аутентификацию  
+- или короткоживущие токены с механизмом refresh и отзыва  
 
-### Key concern
+### Основная проблема
 
-The biggest challenge with JWT is revocation and lifecycle management. Without additional infrastructure (such as blacklists or token rotation), invalidating tokens before expiration is difficult.
-
----
-
-## Identification (UUID)
-
-The repository uses UUIDs for identifying records, which is a solid choice for distributed systems and public-facing APIs.
-
-In my experience, UUIDs are useful for:
-- avoiding ID collisions across services  
-- safely exposing identifiers externally  
-- supporting distributed data generation  
-
-However, I have encountered cases where UUIDs introduced challenges.
-
-### Performance and indexing
-
-In large relational databases:
-- UUIDs increase index size  
-- reduce cache efficiency  
-- slow down joins and lookups compared to numeric IDs  
-
-### Index fragmentation
-
-Random UUIDs (v4) cause:
-- poor index locality  
-- frequent page splits  
-- degraded write performance  
-
-### Debugging and usability
-
-- harder to read and debug  
-- less human-friendly in logs  
-- slower manual inspection  
-
-### When UUIDs become problematic
-
-- high-write systems  
-- heavily indexed tables  
-- systems requiring ordered data  
-
-### Alternatives
-
-Depending on the context, I’ve used:
-- UUIDv7 or ULID (sortable and unique)  
-- auto-increment IDs (better database performance)  
-- hybrid approach (numeric internal ID + UUID for external use)  
+Главная сложность JWT — это управление жизненным циклом токенов. Без дополнительной инфраструктуры (blacklist, ротация токенов) сложно отозвать токен до истечения срока его действия.
 
 ---
 
-## Code Organization (NestJS)
+## Идентификация (UUID)
 
-The repository uses NestJS, which follows a structured architecture with controllers, services, and dependency injection. I’ve worked with similar patterns, and they’ve provided clear benefits.
+В репозитории используются UUID для идентификации записей — это удобное решение, особенно в распределённых системах и публичных API.
 
-### Benefits
+В моей практике UUID полезны, когда:
+- нужно избежать коллизий между сервисами  
+- идентификаторы используются во внешнем API  
+- данные генерируются в разных частях системы  
+
+Однако я сталкивалась с ситуациями, где UUID создавали проблемы.
+
+### Производительность
+
+В реляционных базах данных:
+- увеличивается размер индексов  
+- снижается эффективность кэширования  
+- замедляются JOIN и поиск по сравнению с числовыми ID  
+
+Это особенно заметно при большом объёме данных.
+
+### Фрагментация индексов
+
+Случайные UUID (v4):
+- ухудшают локальность данных  
+- вызывают частые page split  
+- снижают производительность записи  
+
+### Удобство разработки
+
+- сложнее читать и дебажить  
+- неудобны в логах  
+- усложняют ручной анализ данных  
+
+### Когда UUID становятся проблемой
+
+- системы с высокой нагрузкой на запись  
+- таблицы с большим количеством индексов  
+- сценарии, где важна сортировка  
+
+### Альтернативы
+
+В зависимости от задачи я использовала:
+- UUIDv7 или ULID (сортируемые)  
+- автоинкрементные ID (для лучшей производительности)  
+- комбинированный подход (внутренний numeric ID + внешний UUID)  
+
+---
+
+## Организация кода (NestJS)
+
+В репозитории используется NestJS с архитектурой, основанной на контроллерах, сервисах и dependency injection. Я работала с похожими подходами, и они дают ряд преимуществ.
+
+### Преимущества
 
 **Dependency Injection (DI)**
-- simplifies testing through mocking  
-- reduces coupling  
-- improves modularity  
+- упрощает тестирование (моки)  
+- уменьшает связность кода  
+- повышает модульность  
 
-**Separation of concerns**
-- controllers handle HTTP logic  
-- services contain business logic  
-- repositories handle data access  
+**Разделение ответственности**
+- контроллеры — HTTP-слой  
+- сервисы — бизнес-логика  
+- репозитории — работа с данными  
 
-This improves:
-- maintainability  
-- readability  
-- onboarding speed for new developers  
+Это улучшает:
+- читаемость  
+- поддержку  
+- скорость онбординга новых разработчиков  
 
-**Scalability**
-- enforces consistent structure  
-- works well for team-based development  
+**Масштабируемость**
+- структура хорошо подходит для командной разработки  
+- упрощает развитие проекта  
 
 ---
 
-### Challenges
+### Недостатки
 
-**Over-engineering**
-- too many layers for simple logic  
-- slower development for small features  
+**Переусложнение**
+- слишком много слоёв для простых задач  
+- замедляет разработку небольших фич  
 
-**Dependency complexity**
-- circular dependencies can occur  
-- debugging DI issues can be difficult  
+**Сложности с DI**
+- возможны циклические зависимости  
+- сложнее дебажить  
 
 **Boilerplate**
-- requires more initial setup  
-- can slow early development  
+- больше кода "на старте"  
+- может снижать скорость разработки  
 
 ---
 
-### Conclusion
+### Вывод
 
-This architecture works best for medium to large applications and teams. For smaller projects, a simpler structure may be more efficient.
-
----
-
-## Reactivity
-
-The repository uses React, which follows a reactive rendering model where UI updates automatically when state changes.
-
-While powerful, I have encountered cases where reactivity became a hindrance.
-
-### Challenges
-
-**Complex state interactions**
-- difficult to track state across multiple components  
-- bugs caused by stale state or incorrect hook dependencies  
-
-Example:
-In a dashboard with multiple filters, small changes triggered cascading updates, making the system hard to debug.
+Такой подход хорошо подходит для средних и больших проектов. Для маленьких проектов он может быть избыточным.
 
 ---
 
-**Performance issues**
-- unnecessary re-renders  
-- need for manual optimization (`useMemo`, `useCallback`, `React.memo`)  
-- performance depends on developer discipline  
+## Реактивность
+
+В репозитории используется React, основанный на реактивной модели: интерфейс автоматически обновляется при изменении состояния.
+
+Хотя это мощный подход, в практике я сталкивалась с ситуациями, где он создавал сложности.
+
+### Проблемы
+
+**Сложное управление состоянием**
+- трудно отслеживать изменения между компонентами  
+- ошибки из-за устаревшего состояния или неправильных зависимостей  
+
+Пример:
+В одном проекте с дашбордом фильтры вызывали цепочки обновлений, что усложняло отладку.
 
 ---
 
-**Implicit behavior**
-- `useEffect` dependency arrays are error-prone  
-- missing dependencies cause bugs  
-- extra dependencies can create loops  
+**Проблемы с производительностью**
+- лишние перерендеры  
+- необходимость ручной оптимизации (`useMemo`, `useCallback`)  
+- сильная зависимость от дисциплины разработчика  
 
 ---
 
-### Alternative approaches
-
-**Server-side rendering (SSR)**
-- simpler logic  
-- less client complexity  
-- better SEO  
-
-**State machines (e.g., XState)**
-- explicit state transitions  
-- predictable behavior  
-- easier debugging  
-
-**Imperative approaches**
-- direct control for performance-critical features  
-- reduced reliance on global reactivity  
+**Неявное поведение**
+- `useEffect` легко использовать неправильно  
+- ошибки в зависимостях приводят к багам или циклам  
 
 ---
 
-### What I find inconvenient in React
+### Альтернативы
 
-- fragile dependency management in hooks  
-- implicit reactivity model  
-- complex global state management  
-- difficulty tracing re-render chains  
+**SSR (server-side rendering)**
+- проще логика  
+- меньше нагрузки на клиент  
+- лучше для SEO  
+
+**State machines (например, XState)**
+- явные переходы состояний  
+- предсказуемость  
+- проще отладка  
+
+**Императивный подход**
+- прямой контроль в критичных местах  
+- лучше для производительности  
 
 ---
 
-### Final thought
+### Что неудобно в React
 
-Reactivity is powerful when state is well-structured and components are small. In complex systems, additional architectural patterns are often required to maintain clarity and performance.
+- сложная работа с зависимостями в хуках  
+- неявная реактивность  
+- сложное глобальное состояние  
+- трудно отслеживать перерендеры  
+
+---
+
+### Итог
+
+Реактивный подход эффективен при хорошей структуре состояния и небольших компонентах. В сложных системах часто требуются дополнительные архитектурные решения.
